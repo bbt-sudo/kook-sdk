@@ -1,0 +1,56 @@
+{
+  "name": "kook-sdk",
+  "version": "1.0.0",
+  "description": "KOOK Bot SDK for Node.js - 开黑啦机器人开发工具包",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node examples/bot-example.ts",
+    "lint": "eslint src/**/*.ts",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "kook",
+    "开黑啦",
+    "bot",
+    "sdk",
+    "chatbot",
+    "websocket",
+    "kmarkdown",
+    "card-message"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/kook-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/kook-sdk/issues"
+  },
+  "homepage": "https://github.com/your-username/kook-sdk#readme",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "form-data": "^4.0.5",
+    "ws": "^8.14.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "@types/ws": "^8.5.10",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "eslint": "^8.55.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
