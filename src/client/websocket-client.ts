@@ -208,6 +208,11 @@ export class WebSocketClient extends EventEmitter {
 
   // 发送 PING
   private sendPing(): void {
+    // 检查 WebSocket 是否处于打开状态
+    if (this.ws?.readyState !== WebSocket.OPEN) {
+      this.emit('debug', 'Skipping ping: WebSocket is not open');
+      return;
+    }
     this.send({ s: SignalType.PING, d: {} });
     this.emit('ping');
   }
@@ -217,7 +222,10 @@ export class WebSocketClient extends EventEmitter {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(data));
     } else {
-      this.emit('error', new Error('WebSocket is not open'));
+      // 只在非关闭状态下报错，避免关闭过程中的误报
+      if (this.ws && this.ws.readyState !== WebSocket.CLOSING && this.ws.readyState !== WebSocket.CLOSED) {
+        this.emit('error', new Error('WebSocket is not open'));
+      }
     }
   }
 

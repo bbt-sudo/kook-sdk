@@ -1,6 +1,6 @@
 {
   "name": "kook-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "KOOK Bot SDK for Node.js - 开黑啦机器人开发工具包",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -30,12 +30,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/kook-sdk.git"
+    "url": "git+https://github.com/ponyidc/kook-sdk.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/kook-sdk/issues"
+    "url": "https://github.com/ponyidc/kook-sdk/issues"
   },
-  "homepage": "https://github.com/your-username/kook-sdk#readme",
+  "homepage": "https://github.com/ponyidc/kook-sdk#readme",
   "engines": {
     "node": ">=16.0.0"
   },
