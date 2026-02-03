@@ -18,6 +18,8 @@ interface WebSocketClientOptions {
   autoReconnect?: boolean;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
+  /** 是否启用详细日志 */
+  debug?: boolean;
 }
 
 export class WebSocketClient extends EventEmitter {
@@ -30,6 +32,7 @@ export class WebSocketClient extends EventEmitter {
   private isManualClose = false;
   private heartbeatIntervalMs = 30000;
   private gatewayUrl: string | null = null;
+  private debugEnabled: boolean;
 
   constructor(options: WebSocketClientOptions) {
     super();
@@ -39,7 +42,25 @@ export class WebSocketClient extends EventEmitter {
       reconnectInterval: options.reconnectInterval ?? 5000,
       maxReconnectAttempts: options.maxReconnectAttempts ?? 10,
       token: options.token,
+      debug: options.debug ?? true,
     };
+    this.debugEnabled = this.options.debug;
+  }
+
+  /**
+   * 设置是否启用详细日志
+   */
+  setDebug(enabled: boolean): void {
+    this.debugEnabled = enabled;
+  }
+
+  /**
+   * 输出调试日志
+   */
+  private debug(message: string): void {
+    if (this.debugEnabled) {
+      this.emit('debug', message);
+    }
   }
 
   // 获取网关地址
@@ -71,7 +92,7 @@ export class WebSocketClient extends EventEmitter {
         // 获取网关地址
         if (!this.gatewayUrl) {
           this.gatewayUrl = await this.getGatewayUrl();
-          this.emit('debug', `Got gateway URL: ${this.gatewayUrl}`);
+          this.debug(`Got gateway URL: ${this.gatewayUrl}`);
         }
 
         // 构建连接 URL
@@ -87,7 +108,7 @@ export class WebSocketClient extends EventEmitter {
         });
 
         this.ws.on('open', () => {
-          this.emit('debug', 'WebSocket connection opened');
+          this.debug('WebSocket connection opened');
         });
 
         this.ws.on('message', (data: WebSocket.RawData) => {
@@ -95,7 +116,7 @@ export class WebSocketClient extends EventEmitter {
         });
 
         this.ws.on('close', (code: number, reason: Buffer) => {
-          this.emit('debug', `WebSocket closed: ${code} - ${reason.toString()}`);
+          this.debug(`WebSocket closed: ${code} - ${reason.toString()}`);
           this.cleanup();
           
           if (!this.isManualClose && this.options.autoReconnect) {
@@ -125,7 +146,7 @@ export class WebSocketClient extends EventEmitter {
   private handleMessage(data: WebSocket.RawData): void {
     try {
       const signal: WebSocketSignal = JSON.parse(data.toString());
-      this.emit('debug', `Received signal: ${signal.s}`);
+      this.debug(`Received signal: ${signal.s}`);
 
       switch (signal.s) {
         case SignalType.HELLO:
@@ -141,7 +162,7 @@ export class WebSocketClient extends EventEmitter {
           this.handleReconnect();
           break;
         default:
-          this.emit('debug', `Unknown signal type: ${signal.s}`);
+          this.debug(`Unknown signal type: ${signal.s}`);
       }
     } catch (error) {
       this.emit('error', new Error(`Failed to parse message: ${error}`));
@@ -184,7 +205,7 @@ export class WebSocketClient extends EventEmitter {
 
   // 处理重连请求
   private handleReconnect(): void {
-    this.emit('debug', 'Server requested reconnect');
+    this.debug('Server requested reconnect');
     this.disconnect();
     this.attemptReconnect();
   }
@@ -210,7 +231,7 @@ export class WebSocketClient extends EventEmitter {
   private sendPing(): void {
     // 检查 WebSocket 是否处于打开状态
     if (this.ws?.readyState !== WebSocket.OPEN) {
-      this.emit('debug', 'Skipping ping: WebSocket is not open');
+      this.debug('Skipping ping: WebSocket is not open');
       return;
     }
     this.send({ s: SignalType.PING, d: {} });

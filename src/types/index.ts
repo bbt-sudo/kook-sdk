@@ -778,6 +778,15 @@ export type KookEvent =
   | ExitedChannelEvent
   | MessageBtnClickEvent;
 
+// 日志级别
+export enum LogLevel {
+  NONE = 0,
+  ERROR = 1,
+  WARN = 2,
+  INFO = 3,
+  DEBUG = 4,
+}
+
 // SDK 配置选项
 export interface KookSDKOptions {
   token: string;
@@ -789,6 +798,10 @@ export interface KookSDKOptions {
   autoReconnect?: boolean;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
+  /** 日志级别，默认 DEBUG */
+  logLevel?: LogLevel;
+  /** 是否禁用 debug 日志 */
+  silent?: boolean;
 }
 
 // API 错误

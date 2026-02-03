@@ -3,6 +3,7 @@ import { HttpClient } from '../client/http-client';
 import { WebSocketClient } from '../client/websocket-client';
 import {
   KookSDKOptions,
+  LogLevel,
   MessageEvent,
   EventData,
   User,
@@ -17,13 +18,63 @@ import {
 export class KookBot extends EventEmitter {
   private httpClient: HttpClient;
   private wsClient: WebSocketClient | null = null;
-  private options: KookSDKOptions;
+  private options: Required<KookSDKOptions>;
   private isRunning = false;
 
   constructor(options: KookSDKOptions) {
     super();
-    this.options = options;
+    this.options = {
+      token: options.token,
+      mode: options.mode ?? 'websocket',
+      webhookPort: options.webhookPort ?? 8080,
+      webhookPath: options.webhookPath ?? '/webhook',
+      verifyToken: options.verifyToken ?? '',
+      compress: options.compress ?? false,
+      autoReconnect: options.autoReconnect ?? true,
+      reconnectInterval: options.reconnectInterval ?? 5000,
+      maxReconnectAttempts: options.maxReconnectAttempts ?? 10,
+      logLevel: options.logLevel ?? LogLevel.DEBUG,
+      silent: options.silent ?? false,
+    };
     this.httpClient = new HttpClient(options.token);
+  }
+
+  /**
+   * 记录日志
+   */
+  private log(level: LogLevel, message: string): void {
+    if (this.options.silent) return;
+    if (level > this.options.logLevel) return;
+
+    const levelNames = ['NONE', 'ERROR', 'WARN', 'INFO', 'DEBUG'];
+    const timestamp = new Date().toISOString();
+    const levelName = levelNames[level];
+
+    // 根据级别使用不同的输出方式
+    switch (level) {
+      case LogLevel.ERROR:
+        console.error(`[${timestamp}] [${levelName}] ${message}`);
+        break;
+      case LogLevel.WARN:
+        console.warn(`[${timestamp}] [${levelName}] ${message}`);
+        break;
+      default:
+        console.log(`[${timestamp}] [${levelName}] ${message}`);
+    }
+  }
+
+  /**
+   * 设置日志级别
+   */
+  setLogLevel(level: LogLevel): void {
+    this.options.logLevel = level;
+  }
+
+  /**
+   * 获取当前日志级别
+   */
+  getLogLevel(): LogLevel {
+    return this.options.logLevel;
   }
 
   // 启动机器人
@@ -44,6 +95,7 @@ export class KookBot extends EventEmitter {
         autoReconnect: this.options.autoReconnect ?? true,
         reconnectInterval: this.options.reconnectInterval ?? 5000,
         maxReconnectAttempts: this.options.maxReconnectAttempts ?? 10,
+        debug: this.options.logLevel >= LogLevel.DEBUG && !this.options.silent,
       });
 
       this.setupEventHandlers();
