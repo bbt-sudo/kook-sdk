@@ -780,12 +780,26 @@ export type KookEvent =
 
 // 日志级别
 export enum LogLevel {
+  /** 不输出任何日志 */
   NONE = 0,
+  /** 仅错误日志 */
   ERROR = 1,
+  /** 警告及以上 */
   WARN = 2,
+  /** 信息及以上（默认） */
   INFO = 3,
+  /** 所有日志包括调试 */
   DEBUG = 4,
 }
+
+/** 日志级别名称映射 */
+export const LogLevelNames: Record<LogLevel, string> = {
+  [LogLevel.NONE]: 'NONE',
+  [LogLevel.ERROR]: 'ERROR',
+  [LogLevel.WARN]: 'WARN',
+  [LogLevel.INFO]: 'INFO',
+  [LogLevel.DEBUG]: 'DEBUG',
+};
 
 // SDK 配置选项
 export interface KookSDKOptions {

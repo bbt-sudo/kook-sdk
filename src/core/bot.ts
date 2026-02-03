@@ -4,6 +4,7 @@ import { WebSocketClient } from '../client/websocket-client';
 import {
   KookSDKOptions,
   LogLevel,
+  LogLevelNames,
   MessageEvent,
   EventData,
   User,
@@ -23,6 +24,11 @@ export class KookBot extends EventEmitter {
 
   constructor(options: KookSDKOptions) {
     super();
+    
+    // 处理 silent 和 logLevel 的优先级：silent 为 true 时强制 NONE
+    const silent = options.silent ?? false;
+    const logLevel = silent ? LogLevel.NONE : (options.logLevel ?? LogLevel.DEBUG);
+    
     this.options = {
       token: options.token,
       mode: options.mode ?? 'websocket',
@@ -33,41 +39,61 @@ export class KookBot extends EventEmitter {
       autoReconnect: options.autoReconnect ?? true,
       reconnectInterval: options.reconnectInterval ?? 5000,
       maxReconnectAttempts: options.maxReconnectAttempts ?? 10,
-      logLevel: options.logLevel ?? LogLevel.DEBUG,
-      silent: options.silent ?? false,
+      logLevel,
+      silent,
     };
     this.httpClient = new HttpClient(options.token);
+  }
+
+  /**
+   * 检查是否应该记录该级别的日志
+   */
+  private shouldLog(level: LogLevel): boolean {
+    // NONE 级别或 silent 模式不记录任何日志
+    if (this.options.logLevel === LogLevel.NONE || this.options.silent) {
+      return false;
+    }
+    // 只记录小于等于当前设置的级别的日志
+    return level <= this.options.logLevel;
   }
 
   /**
    * 记录日志
    */
   private log(level: LogLevel, message: string): void {
-    if (this.options.silent) return;
-    if (level > this.options.logLevel) return;
+    if (!this.shouldLog(level)) return;
 
-    const levelNames = ['NONE', 'ERROR', 'WARN', 'INFO', 'DEBUG'];
     const timestamp = new Date().toISOString();
-    const levelName = levelNames[level];
+    const levelName = LogLevelNames[level];
+    const formattedMessage = `[${timestamp}] [${levelName}] ${message}`;
 
     // 根据级别使用不同的输出方式
     switch (level) {
       case LogLevel.ERROR:
-        console.error(`[${timestamp}] [${levelName}] ${message}`);
+        console.error(formattedMessage);
         break;
       case LogLevel.WARN:
-        console.warn(`[${timestamp}] [${levelName}] ${message}`);
+        console.warn(formattedMessage);
         break;
       default:
-        console.log(`[${timestamp}] [${levelName}] ${message}`);
+        console.log(formattedMessage);
     }
   }
 
   /**
    * 设置日志级别
+   * @param level - 日志级别
+   * @param silent - 是否同时设置 silent 模式（可选）
    */
-  setLogLevel(level: LogLevel): void {
+  setLogLevel(level: LogLevel, silent?: boolean): void {
     this.options.logLevel = level;
+    if (silent !== undefined) {
+      this.options.silent = silent;
+    }
+    // 如果设置为 NONE，自动开启 silent 模式
+    if (level === LogLevel.NONE) {
+      this.options.silent = true;
+    }
   }
 
   /**
@@ -75,6 +101,31 @@ export class KookBot extends EventEmitter {
    */
   getLogLevel(): LogLevel {
     return this.options.logLevel;
+  }
+
+  /**
+   * 获取日志级别名称
+   */
+  getLogLevelName(): string {
+    return LogLevelNames[this.options.logLevel];
+  }
+
+  /**
+   * 设置 silent 模式
+   * @param silent - 是否静默
+   */
+  setSilent(silent: boolean): void {
+    this.options.silent = silent;
+    if (silent) {
+      this.options.logLevel = LogLevel.NONE;
+    }
+  }
+
+  /**
+   * 检查是否处于 silent 模式
+   */
+  isSilent(): boolean {
+    return this.options.silent;
   }
 
   // 启动机器人
@@ -88,14 +139,15 @@ export class KookBot extends EventEmitter {
       const user = await this.httpClient.getCurrentUser();
       this.emit('debug', `Bot user: ${user.username}#${user.identify_num}`);
 
-      // 连接到 WebSocket
+      // 连接到 WebSocket，传递日志级别配置
       this.wsClient = new WebSocketClient({
         token: this.options.token,
         compress: this.options.compress,
         autoReconnect: this.options.autoReconnect ?? true,
         reconnectInterval: this.options.reconnectInterval ?? 5000,
         maxReconnectAttempts: this.options.maxReconnectAttempts ?? 10,
-        debug: this.options.logLevel >= LogLevel.DEBUG && !this.options.silent,
+        logLevel: this.options.logLevel,
+        silent: this.options.silent,
       });
 
       this.setupEventHandlers();

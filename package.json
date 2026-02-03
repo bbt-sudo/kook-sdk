@@ -1,6 +1,6 @@
 {
   "name": "kook-sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "KOOK Bot SDK for Node.js - 开黑啦机器人开发工具包",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

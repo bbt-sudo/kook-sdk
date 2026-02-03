@@ -16,6 +16,7 @@ export {
   KookSDKOptions,
   KookAPIError,
   LogLevel,
+  LogLevelNames,
 
   // 用户相关
   User,

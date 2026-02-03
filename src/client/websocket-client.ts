@@ -6,7 +6,7 @@ import {
   WebSocketSignal,
   HelloData,
   EventData,
-  KookSDKOptions,
+  LogLevel,
 } from '../types';
 
 // KOOK API 基础 URL
@@ -18,7 +18,11 @@ interface WebSocketClientOptions {
   autoReconnect?: boolean;
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
-  /** 是否启用详细日志 */
+  /** 日志级别，默认 DEBUG */
+  logLevel?: LogLevel;
+  /** 是否静默模式 */
+  silent?: boolean;
+  /** @deprecated 使用 logLevel 替代 */
   debug?: boolean;
 }
 
@@ -32,34 +36,104 @@ export class WebSocketClient extends EventEmitter {
   private isManualClose = false;
   private heartbeatIntervalMs = 30000;
   private gatewayUrl: string | null = null;
-  private debugEnabled: boolean;
 
   constructor(options: WebSocketClientOptions) {
     super();
+    
+    // 处理 debug 参数的向后兼容性
+    let logLevel = options.logLevel ?? LogLevel.DEBUG;
+    let silent = options.silent ?? false;
+    
+    // 如果传入了 debug 参数，根据它设置日志级别
+    if (options.debug !== undefined) {
+      logLevel = options.debug ? LogLevel.DEBUG : LogLevel.INFO;
+    }
+    
+    // silent 模式覆盖所有设置
+    if (silent) {
+      logLevel = LogLevel.NONE;
+    }
+    
     this.options = {
       compress: options.compress ?? false,
       autoReconnect: options.autoReconnect ?? true,
       reconnectInterval: options.reconnectInterval ?? 5000,
       maxReconnectAttempts: options.maxReconnectAttempts ?? 10,
       token: options.token,
+      logLevel,
+      silent,
       debug: options.debug ?? true,
     };
-    this.debugEnabled = this.options.debug;
   }
 
   /**
-   * 设置是否启用详细日志
+   * 检查是否应该记录该级别的日志
+   */
+  private shouldLog(level: LogLevel): boolean {
+    if (this.options.silent || this.options.logLevel === LogLevel.NONE) {
+      return false;
+    }
+    return level <= this.options.logLevel;
+  }
+
+  /**
+   * 设置日志级别
+   */
+  setLogLevel(level: LogLevel): void {
+    this.options.logLevel = level;
+    if (level === LogLevel.NONE) {
+      this.options.silent = true;
+    }
+  }
+
+  /**
+   * 获取当前日志级别
+   */
+  getLogLevel(): LogLevel {
+    return this.options.logLevel;
+  }
+
+  /**
+   * 设置是否启用详细日志（向后兼容）
+   * @deprecated 使用 setLogLevel 替代
    */
   setDebug(enabled: boolean): void {
-    this.debugEnabled = enabled;
+    this.setLogLevel(enabled ? LogLevel.DEBUG : LogLevel.INFO);
   }
 
   /**
    * 输出调试日志
    */
   private debug(message: string): void {
-    if (this.debugEnabled) {
+    if (this.shouldLog(LogLevel.DEBUG)) {
       this.emit('debug', message);
+    }
+  }
+
+  /**
+   * 输出信息日志
+   */
+  private info(message: string): void {
+    if (this.shouldLog(LogLevel.INFO)) {
+      this.emit('debug', `[INFO] ${message}`);
+    }
+  }
+
+  /**
+   * 输出警告日志
+   */
+  private warn(message: string): void {
+    if (this.shouldLog(LogLevel.WARN)) {
+      this.emit('debug', `[WARN] ${message}`);
+    }
+  }
+
+  /**
+   * 输出错误日志
+   */
+  private error(message: string): void {
+    if (this.shouldLog(LogLevel.ERROR)) {
+      this.emit('debug', `[ERROR] ${message}`);
     }
   }
 
